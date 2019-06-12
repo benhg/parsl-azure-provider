@@ -33,6 +33,13 @@ translate_table = {
 
 
 class AzureProvider(ExecutionProvider, RepresentationMixin):
+    """
+    One of 2 methods are required to authenticate: keyfile, or environment
+    variables. If  keyfile is not set, the following environment
+    variables must be set: `AZURE_CLIENT_ID` (the access key for your azure account),
+    `AZURE_CLIENT_SECRET` (the secret key for your azure account), and the
+    `AZURE_TENANT_ID` (the session key for your azure account).
+    """
 
 
 	def __init__(self,
@@ -44,9 +51,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  parallelism=1,
 
                  worker_init='',
-                 instance_type='t2.small',
-                 region='us-east-2',
-                 spot_max_bid=0,
+                 instance_type_ref=None
 
                  key_name=None,
                  key_file=None,
@@ -57,8 +62,32 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  walltime="01:00:00",
                  linger=False,
                  launcher=SingleNodeLauncher()):
-        if not _boto_enabled:
-            raise OptionalModuleMissing(['boto3'], "AWS Provider requires the boto3 module.")
+        if not _api_enabled:
+            raise OptionalModuleMissing(['boto3'], "Azure Provider requires the boto3 module.")
+
+        self.image_id = image_id
+        self._label = 'ec2'
+        self.init_blocks = init_blocks
+        self.min_blocks = min_blocks
+        self.max_blocks = max_blocks
+        self.nodes_per_block = nodes_per_block
+        self.max_nodes = max_blocks * nodes_per_block
+        self.parallelism = parallelism
+
+        self.worker_init = worker_init
+        self.instance_type = instance_type
+        self.region = region
+        self.spot_max_bid = spot_max_bid
+
+        self.key_name = key_name
+        self.key_file = key_file
+
+        self.walltime = walltime
+        self.launcher = launcher
+        self.linger = linger
+        self.resources = {}
+
+
 
 
     def submit(self, command='sleep 1', blocksize=1, tasks_per_node=1, job_name="parsl.auto"):
@@ -81,6 +110,16 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     def current_capacity(self):
         """Returns the current blocksize."""
         return len(self.instances)
+
+
+
+if __name__ == '__main__':
+    vm_reference = {
+        'publisher': 'Canonical',
+        'offer': 'UbuntuServer',
+        'sku': '16.04.0-LTS',
+        'version': 'latest'
+    }
 
 
 
