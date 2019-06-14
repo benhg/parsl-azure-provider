@@ -145,8 +145,19 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             self.group_name, {'location': self.location})
         self.resources.resources["group"] = self.group_name
 
-        logger.info('\nCreating Linux Virtual Machine')
+        logger.info('\nCreating NIC')
         nic = create_nic(network_client)
+
+        logger.info('\nCreating Linux Virtual Machine')
+        vm_parameters = create_vm_parameters(nic.id, self.vm_reference)
+
+        ## Uniqueness strategy from AWS provider
+        job_name = "parsl.auto.{0}".format(time.time())
+
+        async_vm_creation = self.compute_client.virtual_machines.create_or_update(
+            self.vnet_name, job_name, vm_parameters)
+        async_vm_creation.wait()
+
 
     def status(self, job_ids):
         pass
@@ -185,7 +196,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         # Create Subnet
         logger.info('\nCreate Subnet')
-        async_subnet_creation = network_client.subnets.create_or_update(
+        async_subnet_creation = self.network_client.subnets.create_or_update(
             self.group_name,
             self.vnet_name,
             "{}.subnet".format(self.group_name),
@@ -195,7 +206,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         # Create NIC
         logger.info('\nCreate NIC')
-        async_nic_creation = network_client.network_interfaces.create_or_update(
+        async_nic_creation = self.network_client.network_interfaces.create_or_update(
             self.group_name,
             "{}.nic".format(self.group_name),
             {
