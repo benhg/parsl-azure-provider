@@ -14,8 +14,13 @@ from parsl.launchers import SingleNodeLauncher
 logger = logging.getLogger(__name__)
 
 try:
-    import boto3
-    from botocore.exceptions import ClientError
+    from azure.common.credentials import ServicePrincipalCredentials
+    from azure.mgmt.resource import ResourceManagementClient
+    from azure.mgmt.network import NetworkManagementClient
+    from azure.mgmt.compute import ComputeManagementClient
+    from azure.mgmt.compute.models import DiskCreateOption
+
+    from msrestazure.azure_exceptions import CloudError
 
 except ImportError:
     _api_enabled = False
@@ -42,8 +47,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     """
 
 
-	def __init__(self,
-                 image_id,
+    def __init__(self,
                  init_blocks=1,
                  min_blocks=0,
                  max_blocks=10,
@@ -51,22 +55,21 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  parallelism=1,
 
                  worker_init='',
-                 instance_type_ref=None
+                 instance_type_ref=None,
 
                  key_name=None,
                  key_file=None,
                  profile=None,
-                 iam_instance_profile_arn='',
+                 vnet_name="parsl.auto"
 
                  state_file=None,
                  walltime="01:00:00",
                  linger=False,
                  launcher=SingleNodeLauncher()):
         if not _api_enabled:
-            raise OptionalModuleMissing(['boto3'], "Azure Provider requires the boto3 module.")
+            raise OptionalModuleMissing(['azure'], "Azure Provider requires the azure-sdk-for-python module.")
 
-        self.image_id = image_id
-        self._label = 'ec2'
+        self._label = 'azure'
         self.init_blocks = init_blocks
         self.min_blocks = min_blocks
         self.max_blocks = max_blocks
@@ -75,9 +78,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.parallelism = parallelism
 
         self.worker_init = worker_init
-        self.instance_type = instance_type
+        self.vm_reference = instance_type_ref
         self.region = region
-        self.spot_max_bid = spot_max_bid
 
         self.key_name = key_name
         self.key_file = key_file
@@ -91,12 +93,13 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
 
     def submit(self, command='sleep 1', blocksize=1, tasks_per_node=1, job_name="parsl.auto"):
-    	pass
+        pass
 
     def status(self, job_ids):
-    	pass
+        pass
 
     def cancel(self, job_ids):
+        pass
 
     @property
     def scaling_enabled(self):
@@ -120,6 +123,8 @@ if __name__ == '__main__':
         'sku': '16.04.0-LTS',
         'version': 'latest'
     }
+
+    provider = AzureProvider(key_file="azure_keys.json", instance_type_ref=vm_reference)
 
 
 
