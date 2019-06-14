@@ -89,6 +89,23 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.linger = linger
         self.resources = {}
 
+        env_specified = os.getenv("AZURE_CLIENT_ID") is not None and os.getenv("AZURE_CLIENT_SECRET") is not None
+        
+        if key_file is None and not env_specified:
+            raise ConfigurationError("Must specify either, 'key_file', or `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_TENANT_ID` environment variables.")
+
+        if key_file is not None:
+            self.clientid = os.getenv("AZURE_CLIENT_ID")
+            self.clientsecret = os.getenv("AZURE_CLIENT_SECRET")
+            self.tenantid = os.getenv("AZURE_TENANT_ID")
+        else:
+            with open(key_file) as fh:
+                keys = json.load(fh)
+                self.clientid = keys.get("AZURE_CLIENT_ID")
+                self.clientsecret = keys.get("AZURE_CLIENT_SECRET")
+                self.tenantid = keys.get("AZURE_TENANT_ID")
+
+
 
 
 
