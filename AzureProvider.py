@@ -71,7 +71,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  launcher=SingleNodeLauncher()):
         if not _api_enabled:
             raise OptionalModuleMissing(
-                ['azure'], "Azure Provider requires the azure-sdk-for-python module.")
+                ['azure'], "Azure Provider requires the azure module.")
 
         self._label = 'azure'
         self.init_blocks = init_blocks
@@ -83,7 +83,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         self.worker_init = worker_init
         self.vm_reference = instance_type_ref
-        self.region = region
+        self.region = location
 
         self.key_name = key_name
         self.key_file = key_file
@@ -105,21 +105,23 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`,\
                   and `AZURE_TENANT_ID` environment variables.")
 
-        if key_file is not None:
+        if key_file is None:
             self.clientid = os.getenv("AZURE_CLIENT_ID")
             self.clientsecret = os.getenv("AZURE_CLIENT_SECRET")
             self.tenantid = os.getenv("AZURE_TENANT_ID")
+            self.subid = os.getenv("AZURE_SUBSCRIPTION_ID")
         else:
             with open(key_file) as fh:
                 keys = json.load(fh)
                 self.clientid = keys.get("AZURE_CLIENT_ID")
                 self.clientsecret = keys.get("AZURE_CLIENT_SECRET")
                 self.tenantid = keys.get("AZURE_TENANT_ID")
+                self.subid = keys.get("AZURE_SUBSCRIPTION_ID")
 
         self.get_clients()
 
     def get_clients(self):
-        credentials, subscription_id = get_credentials()
+        credentials, subscription_id = self.get_credentials()
         self.resource_client = ResourceManagementClient(
             credentials, subscription_id)
         self.compute_client = ComputeManagementClient(
@@ -128,7 +130,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             credentials, subscription_id)
 
     def get_credentials(self):
-        subscription_id = os.environ['AZURE_SUBSCRIPTION_ID']
+        subscription_id = self.subid
         credentials = ServicePrincipalCredentials(
             client_id=self.clientid,
             secret=self.clientsecret,
