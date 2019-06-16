@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from string import Template
 
 from parsl.dataflow.error import ConfigurationError
@@ -54,17 +55,14 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  max_blocks=10,
                  nodes_per_block=1,
                  parallelism=1,
-
                  worker_init='',
                  instance_type_ref=None,
                  location='westus',
                  group_name='parsl.auto',
-
                  key_name=None,
                  key_file=None,
                  profile=None,
                  vnet_name="parsl.auto",
-
                  state_file=None,
                  walltime="01:00:00",
                  linger=False,
@@ -100,8 +98,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             "AZURE_CLIENT_SECRET") is not None
 
         if key_file is None and not env_specified:
-            raise ConfigurationError(
-                "Must specify either, 'key_file', or\
+            raise ConfigurationError("Must specify either, 'key_file', or\
                  `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`,\
                   and `AZURE_TENANT_ID` environment variables.")
 
@@ -124,40 +121,42 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         credentials, subscription_id = self.get_credentials()
         self.resource_client = ResourceManagementClient(
             credentials, subscription_id)
-        self.compute_client = ComputeManagementClient(
-            credentials, subscription_id)
-        self.network_client = NetworkManagementClient(
-            credentials, subscription_id)
+        self.compute_client = ComputeManagementClient(credentials,
+                                                      subscription_id)
+        self.network_client = NetworkManagementClient(credentials,
+                                                      subscription_id)
 
     def get_credentials(self):
         subscription_id = self.subid
         credentials = ServicePrincipalCredentials(
             client_id=self.clientid,
             secret=self.clientsecret,
-            tenant=self.tenantid
-        )
+            tenant=self.tenantid)
         return credentials, subscription_id
 
-    def submit(self, command='sleep 1', blocksize=1,
-               tasks_per_node=1, job_name="parsl.auto"):
+    def submit(self,
+               command='sleep 1',
+               blocksize=1,
+               tasks_per_node=1,
+               job_name="parsl.auto"):
         # Make sure group exists
         self.resource_client.resource_groups.create_or_update(
             self.group_name, {'location': self.location})
         self.resources.resources["group"] = self.group_name
 
         logger.info('\nCreating NIC')
-        nic = create_nic(network_client)
+        nic = self.create_nic(self.network_client)
 
         logger.info('\nCreating Linux Virtual Machine')
-        vm_parameters = create_vm_parameters(nic.id, self.vm_reference)
+        vm_parameters = self.create_vm_parameters(nic.id, self.vm_reference)
 
-        ## Uniqueness strategy from AWS provider
+        # Uniqueness strategy from AWS provider
         job_name = "parsl.auto.{0}".format(time.time())
 
-        async_vm_creation = self.compute_client.virtual_machines.create_or_update(
-            self.vnet_name, job_name, vm_parameters)
+        async_vm_creation = self.compute_client.\
+            virtual_machines.create_or_update(
+                self.vnet_name, job_name, vm_parameters)
         async_vm_creation.wait()
-
 
     def status(self, job_ids):
         pass
@@ -178,47 +177,42 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         """Returns the current blocksize."""
         return len(self.instances)
 
-    def create_nic(network_client):
+    def create_nic(self, network_client):
         """Create a Network Interface for a VM.
         """
         logger.info('\nCreating Vnet')
-        async_vnet_creation = self.network_client.virtual_networks.create_or_update(
-            self.group_name,
-            self.vnet_name,
-            {
-                'location': self.location,
-                'address_space': {
-                    'address_prefixes': ['10.0.0.0/16']
-                }
-            }
-        )
+        async_vnet_creation = self.network_client.\
+            virtual_networks.create_or_update(
+                self.group_name, self.vnet_name, {
+                    'location': self.location,
+                    'address_space': {
+                        'address_prefixes': ['10.0.0.0/16']
+                    }
+                })
         async_vnet_creation.wait()
 
         # Create Subnet
         logger.info('\nCreate Subnet')
         async_subnet_creation = self.network_client.subnets.create_or_update(
-            self.group_name,
-            self.vnet_name,
-            "{}.subnet".format(self.group_name),
-            {'address_prefix': '10.0.0.0/24'}
-        )
+            self.group_name, self.vnet_name, "{}.subnet".format(
+                self.group_name), {'address_prefix': '10.0.0.0/24'})
         subnet_info = async_subnet_creation.result()
 
         # Create NIC
         logger.info('\nCreate NIC')
-        async_nic_creation = self.network_client.network_interfaces.create_or_update(
-            self.group_name,
-            "{}.nic".format(self.group_name),
-            {
-                'location': self.location,
-                'ip_configurations': [{
-                    'name': "{}.ip.config".format(self.group_name),
-                    'subnet': {
-                        'id': subnet_info.id
-                    }
-                }]
-            }
-        )
+        async_nic_creation = self.network_client.network_interfaces.\
+            create_or_update(
+                self.group_name, "{}.nic".format(self.group_name), {
+                    'location':
+                    self.location,
+                    'ip_configurations': [{
+                        'name':
+                        "{}.ip.config".format(self.group_name),
+                        'subnet': {
+                            'id': subnet_info.id
+                        }
+                    }]
+                })
 
         return async_nic_creation.result()
 
@@ -232,6 +226,5 @@ if __name__ == '__main__':
     }
 
     provider = AzureProvider(
-        key_file="azure_keys.json",
-        instance_type_ref=vm_reference)
+        key_file="azure_keys.json", instance_type_ref=vm_reference)
     provider.submit()
