@@ -178,41 +178,46 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         return len(self.instances)
 
     def create_nic(self, network_client):
-        """Create a Network Interface for a VM.
+        """Create (or update, if it exists already) a Network Interface for a VM.
         """
-        logger.info('\nCreating Vnet')
-        async_vnet_creation = self.network_client.\
-            virtual_networks.create_or_update(
-                self.group_name, self.vnet_name, {
-                    'location': self.location,
-                    'address_space': {
-                        'address_prefixes': ['10.0.0.0/16']
-                    }
-                })
+        logger.info('\nCreating (or updating) Vnet')
+        async_vnet_creation = self.network_client.virtual_networks.create_or_update(
+            self.group_name,
+            self.vnet_name,
+            {
+                'location': self.location,
+                'address_space': {
+                    'address_prefixes': ['10.0.0.0/16']
+                }
+            }
+        )
         async_vnet_creation.wait()
 
         # Create Subnet
-        logger.info('\nCreate Subnet')
+        logger.info('\nCreating (or updating) Subnet')
         async_subnet_creation = self.network_client.subnets.create_or_update(
-            self.group_name, self.vnet_name, "{}.subnet".format(
-                self.group_name), {'address_prefix': '10.0.0.0/24'})
+            self.group_name,
+            self.vnet_name,
+            "{}.subnet".format(self.group_name),
+            {'address_prefix': '10.0.0.0/24'}
+        )
         subnet_info = async_subnet_creation.result()
 
         # Create NIC
-        logger.info('\nCreate NIC')
-        async_nic_creation = self.network_client.network_interfaces.\
-            create_or_update(
-                self.group_name, "{}.nic".format(self.group_name), {
-                    'location':
-                    self.location,
-                    'ip_configurations': [{
-                        'name':
-                        "{}.ip.config".format(self.group_name),
-                        'subnet': {
-                            'id': subnet_info.id
-                        }
-                    }]
-                })
+        logger.info('\nCreating (or updating) NIC')
+        async_nic_creation = self.network_client.network_interfaces.create_or_update(
+            self.group_name,
+            "{}.nic".format(self.group_name),
+            {
+                'location': self.location,
+                'ip_configurations': [{
+                    'name': "{}.ip.config".format(self.group_name),
+                    'subnet': {
+                        'id': subnet_info.id
+                    }
+                }]
+            }
+        )
 
         return async_nic_creation.result()
 
