@@ -128,10 +128,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
     def get_credentials(self):
         subscription_id = self.subid
-        credentials = ServicePrincipalCredentials(
-            client_id=self.clientid,
-            secret=self.clientsecret,
-            tenant=self.tenantid)
+        credentials = ServicePrincipalCredentials(client_id=self.clientid,
+                                                  secret=self.clientsecret,
+                                                  tenant=self.tenantid)
         return credentials, subscription_id
 
     def submit(self,
@@ -156,7 +155,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         async_vm_creation = self.compute_client.\
             virtual_machines.create_or_update(
                 self.vnet_name, job_name, vm_parameters)
-        async_vm_creation.wait()
+
+        vm_info = async_vm_creation.result()
+        self.instances.append(vm_info)
 
     def status(self, job_ids):
         pass
@@ -182,44 +183,79 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         """
         logger.info('\nCreating (or updating) Vnet')
         async_vnet_creation = self.network_client.virtual_networks.create_or_update(
-            self.group_name,
-            self.vnet_name,
-            {
+            self.group_name, self.vnet_name, {
                 'location': self.location,
                 'address_space': {
                     'address_prefixes': ['10.0.0.0/16']
                 }
-            }
-        )
-        async_vnet_creation.wait()
+            })
+        vnet_info = async_vnet_creation.result()
+        self.resources["vnet"] = vnet_info
 
         # Create Subnet
         logger.info('\nCreating (or updating) Subnet')
         async_subnet_creation = self.network_client.subnets.create_or_update(
-            self.group_name,
-            self.vnet_name,
+            self.group_name, self.vnet_name,
             "{}.subnet".format(self.group_name),
-            {'address_prefix': '10.0.0.0/24'}
-        )
+            {'address_prefix': '10.0.0.0/24'})
         subnet_info = async_subnet_creation.result()
+
+        if not self.resources["subnets"]:
+            self.resources["subnets"] = {}
+
+        self.resources["subnets"][subnet_info.id] = subnet_info
 
         # Create NIC
         logger.info('\nCreating (or updating) NIC')
         async_nic_creation = self.network_client.network_interfaces.create_or_update(
-            self.group_name,
-            "{}.nic".format(self.group_name),
-            {
-                'location': self.location,
+            self.group_name, "{}.nic".format(self.group_name), {
+                'location':
+                self.location,
                 'ip_configurations': [{
-                    'name': "{}.ip.config".format(self.group_name),
+                    'name':
+                    "{}.ip.config".format(self.group_name),
                     'subnet': {
                         'id': subnet_info.id
                     }
                 }]
-            }
-        )
+            })
 
-        return async_nic_creation.result()
+        nic_info = async_nic_creation.result()
+
+        if not self.resources["nics"]:
+            self.resources["nics"] = {}
+
+        self.resources["nics"][nic_info.id] = nic_info
+
+        return nic_info
+
+    def create_vm_parameters(self, nic_id, vm_reference):
+        """Create the VM parameters structure.
+        """
+        return {
+            'location': self.region,
+            'os_profile': {
+                'computer_name': "{}.{}".format(self.vnet_name, time.time()),
+                'admin_username': "USERNAME",
+                'admin_password': "PASSWORD"
+            },
+            'hardware_profile': {
+                'vm_size': vm_reference["vm_size"]
+            },
+            'storage_profile': {
+                'image_reference': {
+                    'publisher': vm_reference['publisher'],
+                    'offer': vm_reference['offer'],
+                    'sku': vm_reference['sku'],
+                    'version': vm_reference['version']
+                },
+            },
+            'network_profile': {
+                'network_interfaces': [{
+                    'id': nic_id,
+                }]
+            },
+        }
 
 
 if __name__ == '__main__':
@@ -227,9 +263,10 @@ if __name__ == '__main__':
         'publisher': 'Canonical',
         'offer': 'UbuntuServer',
         'sku': '16.04.0-LTS',
-        'version': 'latest'
+        'version': 'latest',
+        'vm_size': 'Standard_DS1_v2'
     }
 
-    provider = AzureProvider(
-        key_file="azure_keys.json", instance_type_ref=vm_reference)
+    provider = AzureProvider(key_file="azure_keys.json",
+                             instance_type_ref=vm_reference)
     provider.submit()
