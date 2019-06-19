@@ -5,7 +5,7 @@ import time
 from string import Template
 
 from parsl.dataflow.error import ConfigurationError
-from parsl.providers.aws.template import template_string
+from template import template_string
 from parsl.providers.provider_base import ExecutionProvider
 from parsl.providers.error import OptionalModuleMissing
 from parsl.utils import RepresentationMixin
@@ -20,7 +20,7 @@ try:
     from azure.mgmt.compute import ComputeManagementClient
     from azure.mgmt.compute.models import DiskCreateOption
 
-    from msrestazure.azure_exceptions import CloudError
+    # from msrestazure.azure_exceptions import CloudError
 
     _api_enabled = True
 
@@ -80,6 +80,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.parallelism = parallelism
 
         self.worker_init = worker_init
+        self.vm_disk_size = vm_reference["vm_disk_size"]
         self.vm_reference = instance_type_ref
         self.region = location
 
@@ -152,18 +153,38 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         # Uniqueness strategy from AWS provider
         job_name = "parsl.auto.{0}".format(time.time())
 
+        wrapped_cmd = self.launcher(command, tasks_per_node,
+                                    self.nodes_per_block)
+
         async_vm_creation = self.compute_client.\
             virtual_machines.create_or_update(
                 self.vnet_name, job_name, vm_parameters)
 
         vm_info = async_vm_creation.result()
-        self.instances.append(vm_info)
+        self.instances.append(vm_info.id)
+
+        self.create_disk()
+
+        logger.debug("Started instance_id: {0}".format(vm_info.id))
+
+        # state = translate_table.get(instance.state['Name'], "PENDING")
+
+        self.resources[vm_info.id] = {
+            "job_id": vm_info.id,
+            "instance": vm_info,
+            "status": "Test State"
+        }
+
+        return vm_info.id
 
     def status(self, job_ids):
         pass
 
     def cancel(self, job_ids):
-        pass
+
+        if self.linger is True:
+            logger.debug("Ignoring cancel requests due to linger mode")
+            return [False for x in job_ids]
 
     @property
     def scaling_enabled(self):
@@ -182,13 +203,14 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         """Create (or update, if it exists already) a Network Interface for a VM.
         """
         logger.info('\nCreating (or updating) Vnet')
-        async_vnet_creation = self.network_client.virtual_networks.create_or_update(
-            self.group_name, self.vnet_name, {
-                'location': self.location,
-                'address_space': {
-                    'address_prefixes': ['10.0.0.0/16']
-                }
-            })
+        async_vnet_creation = self.network_client.virtual_networks.\
+            create_or_update(
+                self.group_name, self.vnet_name, {
+                    'location': self.location,
+                    'address_space': {
+                        'address_prefixes': ['10.0.0.0/16']
+                    }
+                })
         vnet_info = async_vnet_creation.result()
         self.resources["vnet"] = vnet_info
 
@@ -207,18 +229,19 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         # Create NIC
         logger.info('\nCreating (or updating) NIC')
-        async_nic_creation = self.network_client.network_interfaces.create_or_update(
-            self.group_name, "{}.nic".format(self.group_name), {
-                'location':
-                self.location,
-                'ip_configurations': [{
-                    'name':
-                    "{}.ip.config".format(self.group_name),
-                    'subnet': {
-                        'id': subnet_info.id
-                    }
-                }]
-            })
+        async_nic_creation = self.network_client.network_interfaces.\
+            create_or_update(
+                self.group_name, "{}.nic".format(self.group_name), {
+                    'location':
+                    self.location,
+                    'ip_configurations': [{
+                        'name':
+                        "{}.ip.config".format(self.group_name),
+                        'subnet': {
+                            'id': subnet_info.id
+                        }
+                    }]
+                })
 
         nic_info = async_nic_creation.result()
 
@@ -257,6 +280,18 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             },
         }
 
+    def create_disk(self):
+        logger.info('\nCreate (empty) managed Data Disk')
+        async_disk_creation = self.compute_client.disks.create_or_update(
+            self.group_name, 'mydatadisk1', {
+                'location': self.location,
+                'disk_size_gb': self.vm_ref["disk_size_gb"],
+                'creation_data': {
+                    'create_option': DiskCreateOption.empty
+                }
+            })
+        data_disk = async_disk_creation.result()
+
 
 if __name__ == '__main__':
     vm_reference = {
@@ -264,7 +299,8 @@ if __name__ == '__main__':
         'offer': 'UbuntuServer',
         'sku': '16.04.0-LTS',
         'version': 'latest',
-        'vm_size': 'Standard_DS1_v2'
+        'vm_size': 'Standard_DS1_v2',
+        'vm_disk_size': 10
     }
 
     provider = AzureProvider(key_file="azure_keys.json",
