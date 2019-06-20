@@ -163,7 +163,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         vm_info = async_vm_creation.result()
         self.instances.append(vm_info.id)
 
-        self.create_disk()
+        disk, d_name = self.create_disk()
 
         logger.debug("Started instance_id: {0}".format(vm_info.id))
 
@@ -174,6 +174,26 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             "instance": vm_info,
             "status": "Test State"
         }
+
+        virtual_machine = async_vm_creation.result()
+
+        virtual_machine.storage_profile.data_disks.append({
+            'lun': 12,
+            'name': d_name,
+            'create_option': DiskCreateOption.attach,
+            'managed_disk': {
+                'id': disk.id
+            }
+        })
+        async_disk_attach = self.compute_client.virtual_machines.create_or_update(
+            self.group_name,
+            virtual_machine.name,
+            virtual_machine
+        )
+        async_disk_attach.wait()
+
+        async_vm_start = self.compute_client.virtual_machines.start(self.group_name, job_name)
+        async_vm_start.wait()
 
         return vm_info.id
 
@@ -282,8 +302,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
     def create_disk(self):
         logger.info('\nCreate (empty) managed Data Disk')
+        name = '{}.{}'.format(self.group_name, time.time())
         async_disk_creation = self.compute_client.disks.create_or_update(
-            self.group_name, 'mydatadisk1', {
+            self.group_name, name, {
                 'location': self.location,
                 'disk_size_gb': self.vm_ref["disk_size_gb"],
                 'creation_data': {
@@ -291,6 +312,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 }
             })
         data_disk = async_disk_creation.result()
+        return data_disk, name
 
 
 if __name__ == '__main__':
