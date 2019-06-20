@@ -198,7 +198,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         return vm_info.id
 
     def status(self, job_ids):
-        pass
+        print('\nList VMs in resource group')
+        for vm in self.compute_client.virtual_machines.list(self.group_name):
+            print("\tVM: {}".format(vm.name))
 
     def cancel(self, job_ids):
 
