@@ -178,21 +178,22 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         virtual_machine = async_vm_creation.result()
 
         virtual_machine.storage_profile.data_disks.append({
-            'lun': 12,
-            'name': d_name,
-            'create_option': DiskCreateOption.attach,
+            'lun':
+            12,
+            'name':
+            d_name,
+            'create_option':
+            DiskCreateOption.attach,
             'managed_disk': {
                 'id': disk.id
             }
         })
         async_disk_attach = self.compute_client.virtual_machines.create_or_update(
-            self.group_name,
-            virtual_machine.name,
-            virtual_machine
-        )
+            self.group_name, virtual_machine.name, virtual_machine)
         async_disk_attach.wait()
 
-        async_vm_start = self.compute_client.virtual_machines.start(self.group_name, job_name)
+        async_vm_start = self.compute_client.virtual_machines.start(
+            self.group_name, job_name)
         async_vm_start.wait()
 
         return vm_info.id
@@ -207,6 +208,11 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         if self.linger is True:
             logger.debug("Ignoring cancel requests due to linger mode")
             return [False for x in job_ids]
+
+        print('\nDelete VM')
+        async_vm_delete = compute_client.virtual_machines.delete(
+            self.group_name, job_ids[0])
+        async_vm_delete.wait()
 
     @property
     def scaling_enabled(self):
