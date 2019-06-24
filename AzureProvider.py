@@ -335,4 +335,5 @@ if __name__ == '__main__':
 
     provider = AzureProvider(key_file="azure_keys.json",
                              instance_type_ref=vm_reference)
-    provider.submit()
+    id = provider.submit()
+    provider.status([id])
