@@ -20,7 +20,7 @@ try:
     from azure.mgmt.compute import ComputeManagementClient
     from azure.mgmt.compute.models import DiskCreateOption
 
-    # from msrestazure.azure_exceptions import CloudError
+    from msrestazure.azure_exceptions import CloudError
 
     _api_enabled = True
 
@@ -231,17 +231,22 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     def create_nic(self, network_client):
         """Create (or update, if it exists already) a Network Interface for a VM.
         """
-        logger.info('\nCreating (or updating) Vnet')
-        async_vnet_creation = self.network_client.virtual_networks.\
-            create_or_update(
-                self.group_name, self.vnet_name, {
-                    'location': self.location,
-                    'address_space': {
-                        'address_prefixes': ['10.0.0.0/16']
-                    }
-                })
-        vnet_info = async_vnet_creation.result()
-        self.resources["vnet"] = vnet_info
+        try:
+            logger.info('\nCreating (or updating) Vnet')
+            async_vnet_creation = self.network_client.virtual_networks.\
+                create_or_update(
+                    self.group_name, self.vnet_name, {
+                        'location': self.location,
+                        'address_space': {
+                            'address_prefixes': ['10.0.0.0/16']
+                        }
+                    })
+            vnet_info = async_vnet_creation.result()
+            self.resources["vnet"] = vnet_info
+
+        except CloudError.InUseSubnetCannotBeDeleted:
+            logger.info('Found Existing Vnet. Proceeding.')
+                
 
         # Create Subnet
         logger.info('\nCreating (or updating) Subnet')
@@ -257,6 +262,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.resources["subnets"][subnet_info.id] = subnet_info
 
         # Create NIC
+        try:
         logger.info('\nCreating (or updating) NIC')
         async_nic_creation = self.network_client.network_interfaces.\
             create_or_update(
