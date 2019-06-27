@@ -244,7 +244,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             vnet_info = async_vnet_creation.result()
             self.resources["vnet"] = vnet_info
 
-        except CloudError.InUseSubnetCannotBeDeleted:
+        except Exception as e:
+            print(e)
             logger.info('Found Existing Vnet. Proceeding.')
                 
 
@@ -262,7 +263,6 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.resources["subnets"][subnet_info.id] = subnet_info
 
         # Create NIC
-        try:
         logger.info('\nCreating (or updating) NIC')
         async_nic_creation = self.network_client.network_interfaces.\
             create_or_update(
