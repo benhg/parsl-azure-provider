@@ -251,7 +251,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             {'address_prefix': '10.0.0.0/24'})
         subnet_info = async_subnet_creation.result()
 
-        if not self.resources["subnets"]:
+        if not self.resources.get("subnets", None):
             self.resources["subnets"] = {}
 
         self.resources["subnets"][subnet_info.id] = subnet_info
@@ -274,7 +274,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         nic_info = async_nic_creation.result()
 
-        if not self.resources["nics"]:
+        if not self.resources.get("nics", None):
             self.resources["nics"] = {}
 
         self.resources["nics"][nic_info.id] = nic_info
