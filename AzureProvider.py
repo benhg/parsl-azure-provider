@@ -83,6 +83,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.vm_disk_size = vm_reference["vm_disk_size"]
         self.vm_reference = instance_type_ref
         self.region = location
+        self.vnet_name = vnet_name
 
         self.key_name = key_name
         self.key_file = key_file
@@ -337,3 +338,4 @@ if __name__ == '__main__':
                              instance_type_ref=vm_reference)
     id = provider.submit()
     provider.status([id])
+    provider.cancel([id])
