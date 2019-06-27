@@ -142,7 +142,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         # Make sure group exists
         self.resource_client.resource_groups.create_or_update(
             self.group_name, {'location': self.location})
-        self.resources.resources["group"] = self.group_name
+        self.resources["group"] = self.group_name
 
         logger.info('\nCreating NIC')
         nic = self.create_nic(self.network_client)
