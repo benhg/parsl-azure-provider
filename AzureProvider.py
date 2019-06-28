@@ -207,19 +207,20 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     def cancel(self, job_ids):
         return_vals = []
 
-        if self.linger is True:
+        if self.linger:
             logger.debug("Ignoring cancel requests due to linger mode")
             return [False for x in job_ids]
 
-        try:
-            print('\nDelete VM')
-            async_vm_delete = self.compute_client.virtual_machines.delete(
-                self.group_name, job_ids[0])
-            async_vm_delete.wait()
-            return_vals.append(True)
-        except Exception as e:
-            return_vals.append(False)
-
+        for job_ids in job_ids:
+            try:
+                print('\nDelete VM')
+                async_vm_delete = self.compute_client.virtual_machines.delete(
+                    self.group_name, job_id)
+                async_vm_delete.wait()
+                return_vals.append(True)
+            except Exception as e:
+                return_vals.append(False)
+                
         return return_vals
 
     @property
