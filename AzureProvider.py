@@ -80,7 +80,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.parallelism = parallelism
 
         self.worker_init = worker_init
-        self.vm_disk_size = vm_reference["vm_disk_size"]
+        self.vm_disk_size = vm_reference["disk_size_gb"]
         self.vm_reference = instance_type_ref
         self.region = location
         self.vnet_name = vnet_name
@@ -197,7 +197,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             self.group_name, job_name)
         async_vm_start.wait()
 
-        return vm_info.id
+        return virtual_machine.name
 
     def status(self, job_ids):
         print('\nList VMs in resource group')
@@ -205,15 +205,22 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             print("\tVM: {}".format(vm.name))
 
     def cancel(self, job_ids):
+        return_vals = []
 
         if self.linger is True:
             logger.debug("Ignoring cancel requests due to linger mode")
             return [False for x in job_ids]
 
-        print('\nDelete VM')
-        async_vm_delete = compute_client.virtual_machines.delete(
-            self.group_name, job_ids[0])
-        async_vm_delete.wait()
+        try:
+            print('\nDelete VM')
+            async_vm_delete = self.compute_client.virtual_machines.delete(
+                self.group_name, job_ids[0])
+            async_vm_delete.wait()
+            return_vals.append(True)
+        except Exception as e:
+            return_vals.append(False)
+
+        return return_vals
 
     @property
     def scaling_enabled(self):
@@ -245,7 +252,6 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             self.resources["vnet"] = vnet_info
 
         except Exception as e:
-            print(e)
             logger.info('Found Existing Vnet. Proceeding.')
                 
 
@@ -266,7 +272,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         logger.info('\nCreating (or updating) NIC')
         async_nic_creation = self.network_client.network_interfaces.\
             create_or_update(
-                self.group_name, "{}.nic".format(self.group_name), {
+                self.group_name, "{}.{}.nic".format(self.group_name, time.time()), {
                     'location':
                     self.location,
                     'ip_configurations': [{
@@ -294,8 +300,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             'location': self.region,
             'os_profile': {
                 'computer_name': "{}.{}".format(self.vnet_name, time.time()),
-                'admin_username': "USERNAME",
-                'admin_password': "PASSWORD"
+                'admin_username': self.vm_reference["admin_username"],
+                'admin_password': self.vm_reference["password"]
             },
             'hardware_profile': {
                 'vm_size': vm_reference["vm_size"]
@@ -321,7 +327,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         async_disk_creation = self.compute_client.disks.create_or_update(
             self.group_name, name, {
                 'location': self.location,
-                'disk_size_gb': self.vm_ref["disk_size_gb"],
+                'disk_size_gb': self.vm_reference["disk_size_gb"],
                 'creation_data': {
                     'create_option': DiskCreateOption.empty
                 }
@@ -337,7 +343,9 @@ if __name__ == '__main__':
         'sku': '16.04.0-LTS',
         'version': 'latest',
         'vm_size': 'Standard_DS1_v2',
-        'vm_disk_size': 10
+        'disk_size_gb': 10,
+        "admin_username": "parsl.auto.admin",
+        "password" : "@@86*worth*TRUST*problem*69@@"
     }
 
     provider = AzureProvider(key_file="azure_keys.json",
