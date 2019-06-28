@@ -30,12 +30,11 @@ else:
     _api_enabled = True
 
 translate_table = {
-    'pending': 'PENDING',
-    'running': 'RUNNING',
-    'terminated': 'COMPLETED',
-    'shutting-down': 'COMPLETED',  # (configuring),
-    'stopping': 'COMPLETED',  # We shouldn't really see this state
-    'stopped': 'COMPLETED',  # We shouldn't really see this state
+    'VM pending': 'PENDING',
+    'VM running': 'RUNNING',
+    'VM deallocated': 'COMPLETED',
+    'VM stopping': 'COMPLETED',  # We shouldn't really see this state
+    'VM stopped': 'COMPLETED',  # We shouldn't really see this state
 }
 
 
@@ -162,7 +161,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 self.vnet_name, job_name, vm_parameters)
 
         vm_info = async_vm_creation.result()
-        self.instances.append(vm_info.id)
+        self.instances.append(vm_info.name)
 
         disk, d_name = self.create_disk()
 
@@ -200,9 +199,18 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         return virtual_machine.name
 
     def status(self, job_ids):
+        statuses = []
         print('\nList VMs in resource group')
-        for vm in self.compute_client.virtual_machines.list(self.group_name):
-            print("\tVM: {}".format(vm.name))
+        for job_id in job_ids:
+            try:
+                vm = self.compute_client.virtual_machines.get(self.group_name,job_id, expand='instanceView')
+                status = vm.instance_view.statuses[1].display_status
+                print(status)
+                statuses.append(translate_table.get(status, "UNKNOWN"))
+            # This only happens when it is in ProvisionState/Pending
+            except IndexError as e:
+                statuses.append("PENDING")
+        return statuses
 
     def cancel(self, job_ids):
         return_vals = []
@@ -211,16 +219,17 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             logger.debug("Ignoring cancel requests due to linger mode")
             return [False for x in job_ids]
 
-        for job_ids in job_ids:
+        for job_id in job_ids:
             try:
-                print('\nDelete VM')
+                logger.debug('\nDelete VM {}'.format(job_id))
                 async_vm_delete = self.compute_client.virtual_machines.delete(
                     self.group_name, job_id)
                 async_vm_delete.wait()
+                self.instances.remove(job_id)
                 return_vals.append(True)
             except Exception as e:
                 return_vals.append(False)
-                
+
         return return_vals
 
     @property
@@ -351,6 +360,10 @@ if __name__ == '__main__':
 
     provider = AzureProvider(key_file="azure_keys.json",
                              instance_type_ref=vm_reference)
+    print(provider.current_capacity)
     id = provider.submit()
-    provider.status([id])
-    provider.cancel([id])
+    id2 = provider.submit()
+    print(provider.current_capacity)
+    print(provider.status([id, id2]))
+    provider.cancel([id, id2])
+    print(provider.current_capacity)
