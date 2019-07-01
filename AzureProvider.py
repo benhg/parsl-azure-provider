@@ -129,9 +129,10 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
     def get_credentials(self):
         subscription_id = self.subid
-        credentials = ServicePrincipalCredentials(client_id=self.clientid,
-                                                  secret=self.clientsecret,
-                                                  tenant=self.tenantid)
+        credentials = ServicePrincipalCredentials(
+            client_id=self.clientid,
+            secret=self.clientsecret,
+            tenant=self.tenantid)
         return credentials, subscription_id
 
     def submit(self,
@@ -155,6 +156,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         wrapped_cmd = self.launcher(command, tasks_per_node,
                                     self.nodes_per_block)
+
+
 
         async_vm_creation = self.compute_client.\
             virtual_machines.create_or_update(
@@ -203,9 +206,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         print('\nList VMs in resource group')
         for job_id in job_ids:
             try:
-                vm = self.compute_client.virtual_machines.get(self.group_name,job_id, expand='instanceView')
+                vm = self.compute_client.virtual_machines.get(
+                    self.group_name, job_id, expand='instanceView')
                 status = vm.instance_view.statuses[1].display_status
-                print(status)
                 statuses.append(translate_table.get(status, "UNKNOWN"))
             # This only happens when it is in ProvisionState/Pending
             except IndexError as e:
@@ -263,14 +266,12 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         except Exception as e:
             logger.info('Found Existing Vnet. Proceeding.')
-                
 
         # Create Subnet
         logger.info('\nCreating (or updating) Subnet')
         async_subnet_creation = self.network_client.subnets.create_or_update(
-            self.group_name, self.vnet_name,
-            "{}.subnet".format(self.group_name),
-            {'address_prefix': '10.0.0.0/24'})
+            self.group_name, self.vnet_name, "{}.subnet".format(
+                self.group_name), {'address_prefix': '10.0.0.0/24'})
         subnet_info = async_subnet_creation.result()
 
         if not self.resources.get("subnets", None):
@@ -329,6 +330,37 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                     'id': nic_id,
                 }]
             },
+            'resources': [{
+                "apiVersion":
+                "2015-06-15",
+                "type":
+                "extensions",
+                "name":
+                "config-app",
+                "location":
+                "[resourceGroup().location]",
+                "dependsOn": [
+                    "[concat('Microsoft.Compute/virtualMachines/', concat(variables('vmName'),copyindex()))]"
+                ],
+                "tags": {
+                    "displayName": "config-app"
+                },
+                "properties": {
+                    "publisher": "Microsoft.Azure.Extensions",
+                    "type": "CustomScript",
+                    "typeHandlerVersion": "2.0",
+                    "autoUpgradeMinorVersion": True,
+                    "settings": {
+                        "fileUris": [
+                            "https://raw.githubusercontent.com/Microsoft/dotnet-core-sample-templates/master/dotnet-core-music-linux/scripts/config-music.sh"
+                        ]
+                    },
+                    "protectedSettings": {
+                        "commandToExecute":
+                        "[concat('sudo sh config-music.sh ',variables('musicStoreSqlName'), ' ', parameters('adminUsername'), ' ', parameters('sqlAdminPassword'))]"
+                    }
+                }
+            }]
         }
 
     def create_disk(self):
@@ -355,15 +387,15 @@ if __name__ == '__main__':
         'vm_size': 'Standard_DS1_v2',
         'disk_size_gb': 10,
         "admin_username": "parsl.auto.admin",
-        "password" : "@@86*worth*TRUST*problem*69@@"
+        "password": "@@86*worth*TRUST*problem*69@@"
     }
 
-    provider = AzureProvider(key_file="azure_keys.json",
-                             instance_type_ref=vm_reference)
+    provider = AzureProvider(
+        key_file="azure_keys.json", instance_type_ref=vm_reference)
     print(provider.current_capacity)
     id = provider.submit()
     id2 = provider.submit()
     print(provider.current_capacity)
     print(provider.status([id, id2]))
-    provider.cancel([id, id2])
+    # provider.cancel([id, id2])
     print(provider.current_capacity)
