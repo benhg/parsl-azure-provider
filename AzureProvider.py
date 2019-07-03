@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from string import Template
+import base64
 
 from parsl.dataflow.error import ConfigurationError
 from template import template_string
@@ -19,8 +20,6 @@ try:
     from azure.mgmt.network import NetworkManagementClient
     from azure.mgmt.compute import ComputeManagementClient
     from azure.mgmt.compute.models import DiskCreateOption
-
-    from msrestazure.azure_exceptions import CloudError
 
     _api_enabled = True
 
@@ -148,16 +147,21 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         logger.info('\nCreating NIC')
         nic = self.create_nic(self.network_client)
 
-        logger.info('\nCreating Linux Virtual Machine')
-        vm_parameters = self.create_vm_parameters(nic.id, self.vm_reference)
-
-        # Uniqueness strategy from AWS provider
-        job_name = "parsl.auto.{0}".format(time.time())
-
         wrapped_cmd = self.launcher(command, tasks_per_node,
                                     self.nodes_per_block)
 
+        cmd_str = Template(template_string).substitute(jobname=job_name,
+                                                       user_script=wrapped_cmd,
+                                                       linger=str(self.linger).lower(),
+                                                       worker_init=self.worker_init)
 
+        logger.info('\nCreating Linux Virtual Machine')
+        vm_parameters = self.create_vm_parameters(nic.id,
+                                                  self.vm_reference,
+                                                  cmd_str)
+
+        # Uniqueness strategy from AWS provider
+        job_name = "parsl.auto.{0}".format(time.time())
 
         async_vm_creation = self.compute_client.\
             virtual_machines.create_or_update(
@@ -191,8 +195,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 'id': disk.id
             }
         })
-        async_disk_attach = self.compute_client.virtual_machines.create_or_update(
-            self.group_name, virtual_machine.name, virtual_machine)
+        async_disk_attach = self.\
+            compute_client.virtual_machines.create_or_update(
+                self.group_name, virtual_machine.name, virtual_machine)
         async_disk_attach.wait()
 
         async_vm_start = self.compute_client.virtual_machines.start(
@@ -211,7 +216,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 status = vm.instance_view.statuses[1].display_status
                 statuses.append(translate_table.get(status, "UNKNOWN"))
             # This only happens when it is in ProvisionState/Pending
-            except IndexError as e:
+            except IndexError:
                 statuses.append("PENDING")
         return statuses
 
@@ -230,7 +235,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 async_vm_delete.wait()
                 self.instances.remove(job_id)
                 return_vals.append(True)
-            except Exception as e:
+            except Exception:
                 return_vals.append(False)
 
         return return_vals
@@ -264,7 +269,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             vnet_info = async_vnet_creation.result()
             self.resources["vnet"] = vnet_info
 
-        except Exception as e:
+        except Exception:
             logger.info('Found Existing Vnet. Proceeding.')
 
         # Create Subnet
@@ -283,7 +288,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         logger.info('\nCreating (or updating) NIC')
         async_nic_creation = self.network_client.network_interfaces.\
             create_or_update(
-                self.group_name, "{}.{}.nic".format(self.group_name, time.time()), {
+                self.group_name,
+                "{}.{}.nic".format(self.group_name, time.time()), {
                     'location':
                     self.location,
                     'ip_configurations': [{
@@ -304,7 +310,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         return nic_info
 
-    def create_vm_parameters(self, nic_id, vm_reference):
+    def create_vm_parameters(self, nic_id, vm_reference, cmd_str):
         """Create the VM parameters structure.
         """
         return {
@@ -340,7 +346,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 "location":
                 "[resourceGroup().location]",
                 "dependsOn": [
-                    "[concat('Microsoft.Compute/virtualMachines/', concat(variables('vmName'),copyindex()))]"
+                    "['Microsoft.Compute/virtualMachines/']"
                 ],
                 "tags": {
                     "displayName": "config-app"
@@ -350,14 +356,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                     "type": "CustomScript",
                     "typeHandlerVersion": "2.0",
                     "autoUpgradeMinorVersion": True,
-                    "settings": {
-                        "fileUris": [
-                            "https://raw.githubusercontent.com/Microsoft/dotnet-core-sample-templates/master/dotnet-core-music-linux/scripts/config-music.sh"
-                        ]
-                    },
                     "protectedSettings": {
-                        "commandToExecute":
-                        "[concat('sudo sh config-music.sh ',variables('musicStoreSqlName'), ' ', parameters('adminUsername'), ' ', parameters('sqlAdminPassword'))]"
+                        "script": base64.encode(cmd_str)
                     }
                 }
             }]
