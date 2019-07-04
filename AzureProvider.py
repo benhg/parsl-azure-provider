@@ -384,5 +384,5 @@ if __name__ == '__main__':
     id2 = provider.submit()
     print(provider.current_capacity)
     print(provider.status([id, id2]))
-    # provider.cancel([id, id2])
+    provider.cancel([id, id2])
     print(provider.current_capacity)
