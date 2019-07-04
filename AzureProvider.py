@@ -337,6 +337,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 }]
             },
             'resources': [{
+                "location": self.location,
                 "properties": {
                     "publisher": "Microsoft.Azure.Extensions",
                     "type": "CustomScript",
