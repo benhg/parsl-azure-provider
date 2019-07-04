@@ -337,27 +337,13 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                 }]
             },
             'resources': [{
-                "apiVersion":
-                "2015-06-15",
-                "type":
-                "extensions",
-                "name":
-                "config-app",
-                "location":
-                "[resourceGroup().location]",
-                "dependsOn": [
-                    "['Microsoft.Compute/virtualMachines/']"
-                ],
-                "tags": {
-                    "displayName": "config-app"
-                },
                 "properties": {
                     "publisher": "Microsoft.Azure.Extensions",
                     "type": "CustomScript",
                     "typeHandlerVersion": "2.0",
-                    "autoUpgradeMinorVersion": True,
+                    "autoUpgradeMinorVersion": False,
                     "protectedSettings": {
-                        "script": base64.encode(cmd_str)
+                        "script": str(base64.b64encode(bytes(cmd_str, encoding='utf-8')))
                     }
                 }
             }]
