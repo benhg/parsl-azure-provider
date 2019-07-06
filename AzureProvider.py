@@ -171,6 +171,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.get_clients()
 
     def get_clients(self):
+        """
+        Set up access to Azure API clients
+        """
         credentials, subscription_id = self.get_credentials()
         self.resource_client = ResourceManagementClient(
             credentials, subscription_id)
@@ -180,6 +183,18 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                                                       subscription_id)
 
     def get_credentials(self):
+        """
+        Authenticate to the Azure API
+
+        One of 2 methods are required to authenticate: keyfile, or environment
+        variables. If  keyfile is not set, the following environment
+        variables must be set: `AZURE_CLIENT_ID` (the access key for
+        your azure account),
+        `AZURE_CLIENT_SECRET` (the secret key for your azure account), the
+        `AZURE_TENANT_ID` (the session key for your azure account), and 
+        AZURE_SUBSCRIPTION_ID.
+
+        """
         subscription_id = self.subid
         credentials = ServicePrincipalCredentials(
             client_id=self.clientid,
@@ -192,7 +207,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                blocksize=1,
                tasks_per_node=1,
                job_name="parsl.auto"):
-    """Submit the command onto a freshly instantiated Azure VM
+        """
+        Submit the command onto a freshly instantiated Azure VM
         Submit returns an ID that corresponds to the task that was just submitted.
         Parameters
         ----------
@@ -209,7 +225,6 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         None or str
             If at capacity, None will be returned. Otherwise, the job identifier will be returned.
         """
-        # Make sure group exists
         self.resource_client.resource_groups.create_or_update(
             self.group_name, {'location': self.location})
         self.resources["group"] = self.group_name
@@ -311,7 +326,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         list of bool
             Each entry in the list will contain False if the operation fails. Otherwise, the entry will be True.
         """
-        
+
         return_vals = []
 
         if self.linger:
@@ -452,6 +467,9 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         }
 
     def create_disk(self):
+        """Create a managed data disk of size specified in config.
+
+        Each instance gets one disk"""
         logger.info('\nCreate (empty) managed Data Disk')
         name = '{}.{}'.format(self.group_name, time.time())
         async_disk_creation = self.compute_client.disks.create_or_update(
