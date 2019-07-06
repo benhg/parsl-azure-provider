@@ -39,12 +39,65 @@ translate_table = {
 
 class AzureProvider(ExecutionProvider, RepresentationMixin):
     """
+    A Provider for using Microsoft Azure Resources
+
     One of 2 methods are required to authenticate: keyfile, or environment
     variables. If  keyfile is not set, the following environment
     variables must be set: `AZURE_CLIENT_ID` (the access key for
     your azure account),
-    `AZURE_CLIENT_SECRET` (the secret key for your azure account), and the
-    `AZURE_TENANT_ID` (the session key for your azure account).
+    `AZURE_CLIENT_SECRET` (the secret key for your azure account), the
+    `AZURE_TENANT_ID` (the session key for your azure account), and 
+    AZURE_SUBSCRIPTION_ID.
+
+    Parameters
+    ----------
+    image_id : str
+        Identification of the Amazon Machine Image (AMI).
+    worker_init : str
+        String to append to the Userdata script executed in the cloudinit phase of
+        instance initialization.
+    walltime : str
+        Walltime requested per block in HH:MM:SS.
+    key_file : str
+        Path to json file that contains 'AWSAccessKeyId' and 'AWSSecretKey'.
+    nodes_per_block : int
+        This is always 1 for ec2. Nodes to provision per block.
+    profile : str
+        Profile to be used from the standard aws config file ~/.aws/config.
+    nodes_per_block : int
+        Nodes to provision per block. Default is 1.
+    init_blocks : int
+        Number of blocks to provision at the start of the run. Default is 1.
+    min_blocks : int
+        Minimum number of blocks to maintain. Default is 0.
+    max_blocks : int
+        Maximum number of blocks to maintain. Default is 10.
+    instance_type : str
+        EC2 instance type. Instance types comprise varying combinations of CPU, memory,  .
+        storage, and networking capacity For more information on possible instance types,.
+        see `here <https://aws.amazon.com/ec2/instance-types/>`_ Default is 't2.small'.
+    region : str
+        Amazon Web Service (AWS) region to launch machines. Default is 'us-east-2'.
+    key_name : str
+        Name of the AWS private key (.pem file) that is usually generated on the console
+        to allow SSH access to the EC2 instances. This is mostly used for debugging.
+    spot_max_bid : float
+        Maximum bid price (if requesting spot market machines).
+    iam_instance_profile_arn : str
+        Launch instance with a specific role.
+    state_file : str
+        Path to the state file from a previous run to re-use.
+    walltime : str
+        Walltime requested per block in HH:MM:SS. This option is not currently honored by this provider.
+    launcher : Launcher
+        Launcher for this provider. Possible launchers include
+        :class:`~parsl.launchers.SingleNodeLauncher` (the default),
+        :class:`~parsl.launchers.SrunLauncher`, or
+        :class:`~parsl.launchers.AprunLauncher`
+    linger : Bool
+        When set to True, the workers will not `halt`. The user is responsible for shutting
+        down the node.
+    
     """
 
     def __init__(self,
@@ -139,6 +192,23 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                blocksize=1,
                tasks_per_node=1,
                job_name="parsl.auto"):
+    """Submit the command onto a freshly instantiated Azure VM
+        Submit returns an ID that corresponds to the task that was just submitted.
+        Parameters
+        ----------
+        command : str
+            Command to be invoked on the remote side.
+        blocksize : int
+            Number of blocks requested.
+        tasks_per_node : int (default=1)
+            Number of command invocations to be launched per node
+        job_name : str
+            Prefix for the job name.
+        Returns
+        -------
+        None or str
+            If at capacity, None will be returned. Otherwise, the job identifier will be returned.
+        """
         # Make sure group exists
         self.resource_client.resource_groups.create_or_update(
             self.group_name, {'location': self.location})
@@ -207,8 +277,18 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         return virtual_machine.name
 
     def status(self, job_ids):
+         """Get the status of a list of jobs identified by their ids.
+        Parameters
+        ----------
+        job_ids : list of str
+            Identifiers for the jobs.
+        Returns
+        -------
+        list of int
+            The status codes of the requsted jobs.
+        """
         statuses = []
-        print('\nList VMs in resource group')
+        logger.info('\nList VMs in resource group')
         for job_id in job_ids:
             try:
                 vm = self.compute_client.virtual_machines.get(
@@ -221,6 +301,17 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         return statuses
 
     def cancel(self, job_ids):
+        """Cancel the jobs specified by a list of job ids.
+        Parameters
+        ----------
+        job_ids : list of str
+            List of of job identifiers
+        Returns
+        -------
+        list of bool
+            Each entry in the list will contain False if the operation fails. Otherwise, the entry will be True.
+        """
+        
         return_vals = []
 
         if self.linger:
@@ -255,6 +346,16 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
     def create_nic(self, network_client):
         """Create (or update, if it exists already) a Network Interface for a VM.
+
+            Also ensures that there's a virtual network available. 
+
+            We create a VPC with CIDR 10.0.0.0/16, which provides up to 64,000 instances.
+            
+            We attach a subnet for each availability zone within the region specified in the
+            config. We give each subnet an ip range like 10.0.X.0/20, which is large enough
+            for approx. 4000 instances.
+
+
         """
         try:
             logger.info('\nCreating (or updating) Vnet')
@@ -276,7 +377,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         logger.info('\nCreating (or updating) Subnet')
         async_subnet_creation = self.network_client.subnets.create_or_update(
             self.group_name, self.vnet_name, "{}.subnet".format(
-                self.group_name), {'address_prefix': '10.0.0.0/24'})
+                self.group_name), {'address_prefix': '10.0.0.0/20'})
         subnet_info = async_subnet_creation.result()
 
         if not self.resources.get("subnets", None):
