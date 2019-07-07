@@ -51,19 +51,27 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
     Parameters
     ----------
-    image_id : str
-        Identification of the Amazon Machine Image (AMI).
+    vm_reference : dict
+        Dictionary describing the parameters of the Azure VM. Required structure:
+        {
+          'publisher': VM OS publisher
+          'offer': VM OS offer
+          'sku': VM OS SKU
+          'version': VM OS version
+          'vm_size': VM Size, analogous to instance type for AWS
+          'disk_size_gb': (int) size of VM disk in gb
+          "admin_username": (str) admin username of VM instances,
+          "password": (str) admin password for VM instances
+        }
     worker_init : str
         String to append to the Userdata script executed in the cloudinit phase of
         instance initialization.
     walltime : str
         Walltime requested per block in HH:MM:SS.
     key_file : str
-        Path to json file that contains 'AWSAccessKeyId' and 'AWSSecretKey'.
+        Path to json file that contains 'Azure keys'
     nodes_per_block : int
-        This is always 1 for ec2. Nodes to provision per block.
-    profile : str
-        Profile to be used from the standard aws config file ~/.aws/config.
+        This is always 1 for Azure. Nodes to provision per block.
     nodes_per_block : int
         Nodes to provision per block. Default is 1.
     init_blocks : int
@@ -72,21 +80,15 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         Minimum number of blocks to maintain. Default is 0.
     max_blocks : int
         Maximum number of blocks to maintain. Default is 10.
-    instance_type : str
-        EC2 instance type. Instance types comprise varying combinations of CPU, memory,  .
-        storage, and networking capacity For more information on possible instance types,.
-        see `here <https://aws.amazon.com/ec2/instance-types/>`_ Default is 't2.small'.
     region : str
-        Amazon Web Service (AWS) region to launch machines. Default is 'us-east-2'.
+        Azure region to launch machines. Default is 'westus'.
     key_name : str
-        Name of the AWS private key (.pem file) that is usually generated on the console
-        to allow SSH access to the EC2 instances. This is mostly used for debugging.
+        Name of the Azure private key (.pem file) that is usually generated on the console
+        to allow SSH access to the Azure instances. This is mostly used for debugging.
     spot_max_bid : float
         Maximum bid price (if requesting spot market machines).
     iam_instance_profile_arn : str
         Launch instance with a specific role.
-    state_file : str
-        Path to the state file from a previous run to re-use.
     walltime : str
         Walltime requested per block in HH:MM:SS. This option is not currently honored by this provider.
     launcher : Launcher
@@ -96,8 +98,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         :class:`~parsl.launchers.AprunLauncher`
     linger : Bool
         When set to True, the workers will not `halt`. The user is responsible for shutting
-        down the node.
-    
+        down the nodes.
     """
 
     def __init__(self,
