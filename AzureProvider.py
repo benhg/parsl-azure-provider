@@ -46,13 +46,15 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     variables must be set: `AZURE_CLIENT_ID` (the access key for
     your azure account),
     `AZURE_CLIENT_SECRET` (the secret key for your azure account), the
-    `AZURE_TENANT_ID` (the session key for your azure account), and 
+    `AZURE_TENANT_ID` (the session key for your azure account), and
     AZURE_SUBSCRIPTION_ID.
 
     Parameters
     ----------
     vm_reference : dict
-        Dictionary describing the parameters of the Azure VM. Required structure:
+        Dictionary describing the parameters of the Azure VM.
+
+        Required structure:
         {
           'publisher': VM OS publisher
           'offer': VM OS offer
@@ -132,8 +134,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.parallelism = parallelism
 
         self.worker_init = worker_init
-        self.vm_disk_size = vm_reference["disk_size_gb"]
         self.vm_reference = instance_type_ref
+        self.vm_disk_size = self.vm_reference["disk_size_gb"]
         self.region = location
         self.vnet_name = vnet_name
 
@@ -192,7 +194,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         variables must be set: `AZURE_CLIENT_ID` (the access key for
         your azure account),
         `AZURE_CLIENT_SECRET` (the secret key for your azure account), the
-        `AZURE_TENANT_ID` (the session key for your azure account), and 
+        `AZURE_TENANT_ID` (the session key for your azure account), and
         AZURE_SUBSCRIPTION_ID.
 
         """
@@ -293,7 +295,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         return virtual_machine.name
 
     def status(self, job_ids):
-         """Get the status of a list of jobs identified by their ids.
+        """Get the status of a list of jobs identified by their ids.
         Parameters
         ----------
         job_ids : list of str
@@ -363,10 +365,10 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     def create_nic(self, network_client):
         """Create (or update, if it exists already) a Network Interface for a VM.
 
-            Also ensures that there's a virtual network available. 
+            Also ensures that there's a virtual network available.
 
             We create a VPC with CIDR 10.0.0.0/16, which provides up to 64,000 instances.
-            
+
             We attach a subnet for each availability zone within the region specified in the
             config. We give each subnet an ip range like 10.0.X.0/20, which is large enough
             for approx. 4000 instances.
@@ -483,4 +485,3 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             })
         data_disk = async_disk_creation.result()
         return data_disk, name
-
