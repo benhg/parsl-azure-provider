@@ -1,0 +1,6 @@
+2019-07-07 16:38:23.550 interchange:158 [INFO]  Attempting connection to client at 127.0.0.1 on ports: 55665,55835,55022
+2019-07-07 16:38:23.552 interchange:171 [INFO]  Connected to client
+2019-07-07 16:38:23.553 interchange:207 [INFO]  Bound to ports 54812,54382 for incoming worker connections
+2019-07-07 16:38:23.553 interchange:221 [INFO]  Platform info: {'parsl_v': '0.8.0', 'python_v': '3.7.3', 'os': 'Darwin', 'hostname': 'benbox.local', 'dir': '/Users/ben/Desktop/parsl-azure-provider'}
+2019-07-07 16:38:23.553 interchange:339 [INFO]  Incoming ports bound
+2019-07-07 16:38:23.554 interchange:256 [INFO]  [TASK_PULL_THREAD] Starting

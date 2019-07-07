@@ -6,7 +6,7 @@ from string import Template
 import base64
 
 from parsl.dataflow.error import ConfigurationError
-from template import template_string
+from parsl.providers.azure.template import template_string
 from parsl.providers.provider_base import ExecutionProvider
 from parsl.providers.error import OptionalModuleMissing
 from parsl.utils import RepresentationMixin
@@ -87,10 +87,6 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     key_name : str
         Name of the Azure private key (.pem file) that is usually generated on the console
         to allow SSH access to the Azure instances. This is mostly used for debugging.
-    spot_max_bid : float
-        Maximum bid price (if requesting spot market machines).
-    iam_instance_profile_arn : str
-        Launch instance with a specific role.
     walltime : str
         Walltime requested per block in HH:MM:SS. This option is not currently honored by this provider.
     launcher : Launcher
@@ -110,20 +106,15 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  nodes_per_block=1,
                  parallelism=1,
                  worker_init='',
-
-                 instance_type_ref=None,
+                 vm_reference=None,
                  location='westus',
                  group_name='parsl.auto',
                  key_name=None,
                  key_file=None,
-                 profile=None,
                  vnet_name="parsl.auto",
-                 state_file=None,
-
                  walltime="01:00:00",
                  linger=False,
                  launcher=SingleNodeLauncher()):
-    
         if not _api_enabled:
             raise OptionalModuleMissing(
                 ['azure'], "Azure Provider requires the azure module.")
@@ -137,7 +128,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.parallelism = parallelism
 
         self.worker_init = worker_init
-        self.vm_reference = instance_type_ref
+        self.vm_reference = vm_reference
         self.vm_disk_size = self.vm_reference["disk_size_gb"]
         self.region = location
         self.vnet_name = vnet_name
@@ -395,16 +386,24 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
             logger.info('Found Existing Vnet. Proceeding.')
 
         # Create Subnet
-        logger.info('\nCreating (or updating) Subnet')
-        async_subnet_creation = self.network_client.subnets.create_or_update(
-            self.group_name, self.vnet_name, "{}.subnet".format(
-                self.group_name), {'address_prefix': '10.0.0.0/20'})
-        subnet_info = async_subnet_creation.result()
-
         if not self.resources.get("subnets", None):
             self.resources["subnets"] = {}
 
-        self.resources["subnets"][subnet_info.id] = subnet_info
+        try:
+            logger.info('\nCreating (or updating) Subnet')
+            async_subnet_creation = self.network_client.subnets.create_or_update(
+                self.group_name, self.vnet_name, "{}.subnet".format(
+                    self.group_name), {'address_prefix': '10.0.0.0/20'})
+            subnet_info = async_subnet_creation.result()
+
+            self.resources["subnets"][subnet_info.id] = subnet_info
+
+        except Exception:
+
+            subnet_info = self.network_client.subnets.get(self.group_name, self.vnet_name, "{}.subnet".format(
+                    self.group_name))
+            self.resources["subnets"][subnet_info.id] = subnet_info
+            logger.info('Found Existing Subnet. Proceeding.')
 
         # Create NIC
         logger.info('\nCreating (or updating) NIC')
