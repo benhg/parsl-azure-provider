@@ -7,7 +7,7 @@ import pytest
 import parsl
 from parsl.app.app import App
 from parsl.executors.high_throughput.executor import HighThroughputExecutor
-from parsl.providers.azure import AzureProvider
+from parsl.providers import AzureProvider
 from parsl.config import Config
 
 parsl.set_stream_logger()
@@ -109,9 +109,7 @@ def demonstrate_custom_exception():
 
 if __name__ == '__main__':
     parsl.clear()
-    config = Config(
-    executors=[HighThroughputExecutor(provider=AzureProvider(
-    key_file="azure_keys.json", instance_type_ref=vm_reference))])
+   
     vm_reference = {
         'publisher': 'Canonical',
         'offer': 'UbuntuServer',
@@ -122,7 +120,11 @@ if __name__ == '__main__':
         "admin_username": "parsl.auto.admin",
         "password": "@@86*worth*TRUST*problem*69@@"
     }
-    parsl.load(config)
+
+    config = Config(
+    executors=[HighThroughputExecutor(provider=AzureProvider(
+    key_file="azure_keys.json", instance_type_ref=vm_reference))])
+
     parsl.load(config)
 
     parser = argparse.ArgumentParser()
