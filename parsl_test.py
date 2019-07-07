@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     config = Config(
     executors=[HighThroughputExecutor(provider=AzureProvider(
-    key_file="azure_keys.json", instance_type_ref=vm_reference))])
+    key_file="azure_keys.json", vm_reference=vm_reference))])
 
     parsl.load(config)
 

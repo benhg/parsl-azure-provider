@@ -110,6 +110,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  nodes_per_block=1,
                  parallelism=1,
                  worker_init='',
+
                  instance_type_ref=None,
                  location='westus',
                  group_name='parsl.auto',
@@ -118,9 +119,11 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  profile=None,
                  vnet_name="parsl.auto",
                  state_file=None,
+
                  walltime="01:00:00",
                  linger=False,
                  launcher=SingleNodeLauncher()):
+    
         if not _api_enabled:
             raise OptionalModuleMissing(
                 ['azure'], "Azure Provider requires the azure module.")
