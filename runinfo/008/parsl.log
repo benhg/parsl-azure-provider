@@ -1,0 +1,163 @@
+2019-07-08 21:00:52.589 parsl.dataflow.dflow:80 [DEBUG]  Starting DataFlowKernel with config
+Config(
+    app_cache=True, 
+    checkpoint_files=None, 
+    checkpoint_mode=None, 
+    checkpoint_period=None, 
+    data_management_max_threads=10, 
+    executors=[IPyParallelExecutor(
+        container_image=None, 
+        controller=Controller(
+            interfaces=None, 
+            ipython_dir='~/.ipython', 
+            log=True, 
+            mode='auto', 
+            port=None, 
+            port_range=None, 
+            profile='default', 
+            public_ip=None, 
+            reuse=False
+        ), 
+        engine_debug_level=None, 
+        engine_dir=None, 
+        label='ipp', 
+        managed=True, 
+        provider=AzureProvider(
+            group_name='parsl.auto', 
+            init_blocks=1, 
+            key_file='azure_keys.json', 
+            key_name=None, 
+            launcher=SingleNodeLauncher(), 
+            linger=False, 
+            location='westus', 
+            max_blocks=10, 
+            min_blocks=0, 
+            nodes_per_block=1, 
+            parallelism=1, 
+            vm_reference={'publisher': 'Canonical', 'offer': 'UbuntuServer', 'sku': '16.04.0-LTS', 'version': 'latest', 'vm_size': 'Standard_DS1_v2', 'disk_size_gb': 10, 'admin_username': 'parsl.auto.admin', 'password': '@@86*worth*TRUST*problem*69@@'}, 
+            vnet_name='parsl.auto', 
+            walltime='01:00:00', 
+            worker_init=''
+        ), 
+        storage_access=[], 
+        workers_per_node=1, 
+        working_dir=None
+    )], 
+    lazy_errors=True, 
+    monitoring=None, 
+    retries=0, 
+    run_dir='runinfo', 
+    strategy='simple', 
+    usage_tracking=False
+)
+2019-07-08 21:00:52.590 parsl.dataflow.dflow:81 [INFO]  Parsl version: 0.8.0
+2019-07-08 21:00:52.590 parsl.dataflow.usage_tracking.usage:126 [DEBUG]  Tracking status: False
+2019-07-08 21:00:52.590 parsl.dataflow.usage_tracking.usage:127 [DEBUG]  Testing mode   : False
+2019-07-08 21:00:52.590 parsl.dataflow.dflow:107 [INFO]  Run id is: 6512aa76-9110-44e2-9bee-e7cc1995efeb
+2019-07-08 21:00:52.754 parsl.dataflow.memoization:52 [INFO]  App caching initialized
+2019-07-08 21:00:52.755 parsl.executors.ipp_controller:99 [DEBUG]  Starting ipcontroller with 'ipcontroller --ipython-dir=/Users/ben/Desktop/parsl-azure-provider/runinfo/008 --ip=* --profile=ipp   '
+2019-07-08 21:00:53.972 parsl.executors.ipp:107 [DEBUG]  Waiting for /Users/ben/Desktop/parsl-azure-provider/runinfo/008/profile_ipp/security/ipcontroller-client.json
+2019-07-08 21:00:54.275 parsl.executors.ipp:123 [DEBUG]  Starting IPyParallelExecutor with provider:
+AzureProvider(
+    group_name='parsl.auto', 
+    init_blocks=1, 
+    key_file='azure_keys.json', 
+    key_name=None, 
+    launcher=SingleNodeLauncher(), 
+    linger=False, 
+    location='westus', 
+    max_blocks=10, 
+    min_blocks=0, 
+    nodes_per_block=1, 
+    parallelism=1, 
+    vm_reference={'publisher': 'Canonical', 'offer': 'UbuntuServer', 'sku': '16.04.0-LTS', 'version': 'latest', 'vm_size': 'Standard_DS1_v2', 'disk_size_gb': 10, 'admin_username': 'parsl.auto.admin', 'password': '@@86*worth*TRUST*problem*69@@'}, 
+    vnet_name='parsl.auto', 
+    walltime='01:00:00', 
+    worker_init=''
+)
+2019-07-08 21:00:55.557 parsl.providers.azure.azure:229 [INFO]  
+Creating NIC
+2019-07-08 21:00:55.557 parsl.providers.azure.azure:389 [INFO]  
+Creating (or updating) Vnet
+2019-07-08 21:00:55.943 parsl.providers.azure.azure:404 [INFO]  Found Existing Vnet. Proceeding.
+2019-07-08 21:00:55.943 parsl.providers.azure.azure:411 [INFO]  
+Creating (or updating) Subnet
+2019-07-08 21:00:56.413 parsl.providers.azure.azure:426 [INFO]  Found Existing Subnet. Proceeding.
+2019-07-08 21:00:56.413 parsl.providers.azure.azure:429 [INFO]  
+Creating (or updating) NIC
+2019-07-08 21:01:28.775 parsl.providers.azure.azure:240 [INFO]  
+Creating Linux Virtual Machine
+2019-07-08 21:02:11.375 parsl.providers.azure.azure:486 [INFO]  
+Create (empty) managed Data Disk
+2019-07-08 21:02:42.774 parsl.providers.azure.azure:256 [DEBUG]  Started instance_id: /subscriptions/2232146b-0836-4a1e-89eb-dc32054d9a03/resourceGroups/parsl.auto/providers/Microsoft.Compute/virtualMachines/parsl.auto.1562637688.775316
+2019-07-08 21:03:24.712 parsl.providers.azure.azure:288 [ERROR]  export CORES=$(getconf _NPROCESSORS_ONLN)
+echo "Found cores : $CORES"
+WORKERCOUNT=1
+
+CMD ( ) {
+mkdir -p runinfo/008
+cat <<EOF > runinfo/008/ipengine.221274f4-6795-4ec7-aaea-4a05e98299cd.json
+{
+  "ssh": "",
+  "interface": "tcp://*",
+  "registration": 55043,
+  "control": 55045,
+  "mux": 55047,
+  "hb_ping": 55048,
+  "hb_pong": 55049,
+  "task": 55051,
+  "iopub": 55053,
+  "key": "df299172-e0461239490bfb0c64a43fa3",
+  "location": "benbox.local",
+  "pack": "json",
+  "unpack": "json",
+  "signature_scheme": "hmac-sha256"
+}
+EOF
+
+mkdir -p 'runinfo/008/engine_logs'
+ipengine --file=runinfo/008/ipengine.221274f4-6795-4ec7-aaea-4a05e98299cd.json  >> runinfo/008/engine_logs/$JOBNAME.log 2>&1
+
+}
+for COUNT in $(seq 1 1 $WORKERCOUNT)
+do
+    echo "Launching worker: $COUNT"
+    CMD &
+done
+wait
+echo "All workers done"
+
+2019-07-08 21:03:55.851 parsl.providers.azure.azure:301 [ERROR]  Enable succeeded: 
+[stdout]
+systemd-private-c6edca71d95d42c6bee15adeae0678c7-systemd-timesyncd.service-Zwh1gl
+
+[stderr]
+
+2019-07-08 21:03:55.852 parsl.executors.ipp:242 [DEBUG]  Launched block 0:parsl.auto.1562637688.775316
+2019-07-08 21:03:55.852 parsl.executors.ipp:249 [ERROR]  No execution provider available
+2019-07-08 21:03:55.853 parsl.executors.ipp:132 [DEBUG]  Starting executor
+2019-07-08 21:03:55.853 parsl.dataflow.strategy:125 [DEBUG]  Scaling strategy: simple
+2019-07-08 21:03:55.854 parsl.dataflow.dflow:694 [INFO]  Task 0 submitted for App double, waiting on tasks []
+2019-07-08 21:03:55.854 parsl.dataflow.dflow:704 [DEBUG]  Task 0 set to pending state with AppFuture: <AppFuture super=<AppFuture at 0x11354ef98 state=pending> parent=None>
+2019-07-08 21:03:55.904 parsl.dataflow.dflow:470 [INFO]  Task 0 launched on executor ipp
+2019-07-08 21:03:56.856 parsl.providers.azure.azure:319 [INFO]  
+List VMs in resource group
+2019-07-08 21:03:57.109 parsl.dataflow.strategy:204 [DEBUG]  Executor ipp has 1 active tasks, 1/0/0 running/submitted/pending blocks, and 0 connected workers
+2019-07-08 21:04:01.860 parsl.providers.azure.azure:319 [INFO]  
+List VMs in resource group
+2019-07-08 21:04:02.102 parsl.dataflow.strategy:204 [DEBUG]  Executor ipp has 1 active tasks, 1/0/0 running/submitted/pending blocks, and 0 connected workers
+2019-07-08 21:04:06.860 parsl.providers.azure.azure:319 [INFO]  
+List VMs in resource group
+2019-07-08 21:04:07.251 parsl.dataflow.strategy:204 [DEBUG]  Executor ipp has 1 active tasks, 1/0/0 running/submitted/pending blocks, and 0 connected workers
+2019-07-08 21:04:11.864 parsl.providers.azure.azure:319 [INFO]  
+List VMs in resource group
+2019-07-08 21:04:12.119 parsl.dataflow.strategy:204 [DEBUG]  Executor ipp has 1 active tasks, 1/0/0 running/submitted/pending blocks, and 0 connected workers
+2019-07-08 21:04:12.942 parsl.dataflow.dflow:831 [INFO]  DFK cleanup initiated
+2019-07-08 21:04:12.942 parsl.dataflow.dflow:740 [INFO]  Summary of tasks in DFK:
+2019-07-08 21:04:12.943 parsl.dataflow.dflow:771 [INFO]  Tasks in state States.launched: 0
+2019-07-08 21:04:12.943 parsl.dataflow.dflow:778 [INFO]  End of summary
+2019-07-08 21:04:12.943 parsl.dataflow.dflow:855 [INFO]  Terminating flow_control and strategy threads
+2019-07-08 21:04:12.943 parsl.providers.azure.azure:319 [INFO]  
+List VMs in resource group
+2019-07-08 21:04:13.450 parsl.providers.azure.azure:351 [DEBUG]  
+Delete VM parsl.auto.1562637688.775316

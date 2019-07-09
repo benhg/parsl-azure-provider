@@ -6,7 +6,7 @@ import pytest
 
 import parsl
 from parsl.app.app import App
-from parsl.executors.high_throughput.executor import HighThroughputExecutor
+from parsl.executors.ipp import IPyParallelExecutor
 from parsl.providers import AzureProvider
 from parsl.config import Config
 
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     }
 
     config = Config(
-    executors=[HighThroughputExecutor(provider=AzureProvider(
+    executors=[IPyParallelExecutor(provider=AzureProvider(
     key_file="azure_keys.json", vm_reference=vm_reference))])
 
     parsl.load(config)

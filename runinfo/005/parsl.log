@@ -1,0 +1,96 @@
+2019-07-08 20:41:12.986 parsl.dataflow.dflow:80 [DEBUG]  Starting DataFlowKernel with config
+Config(
+    app_cache=True, 
+    checkpoint_files=None, 
+    checkpoint_mode=None, 
+    checkpoint_period=None, 
+    data_management_max_threads=10, 
+    executors=[HighThroughputExecutor(
+        address='127.0.0.1', 
+        cores_per_worker=1.0, 
+        heartbeat_period=30, 
+        heartbeat_threshold=120, 
+        interchange_port_range=(55000, 56000), 
+        label='HighThroughputExecutor', 
+        launch_cmd='process_worker_pool.py {debug} {max_workers} -p {prefetch_capacity} -c {cores_per_worker} -m {mem_per_worker} --poll {poll_period} --task_url={task_url} --result_url={result_url} --logdir={logdir} --block_id={{block_id}} --hb_period={heartbeat_period} --hb_threshold={heartbeat_threshold} ', 
+        managed=True, 
+        max_workers=inf, 
+        mem_per_worker=None, 
+        poll_period=10, 
+        prefetch_capacity=0, 
+        provider=AzureProvider(
+            group_name='parsl.auto', 
+            init_blocks=1, 
+            key_file='azure_keys.json', 
+            key_name=None, 
+            launcher=SingleNodeLauncher(), 
+            linger=False, 
+            location='westus', 
+            max_blocks=10, 
+            min_blocks=0, 
+            nodes_per_block=1, 
+            parallelism=1, 
+            vm_reference={'publisher': 'Canonical', 'offer': 'UbuntuServer', 'sku': '16.04.0-LTS', 'version': 'latest', 'vm_size': 'Standard_DS1_v2', 'disk_size_gb': 10, 'admin_username': 'parsl.auto.admin', 'password': '@@86*worth*TRUST*problem*69@@'}, 
+            vnet_name='parsl.auto', 
+            walltime='01:00:00', 
+            worker_init=''
+        ), 
+        storage_access=[], 
+        suppress_failure=False, 
+        worker_debug=False, 
+        worker_logdir_root=None, 
+        worker_port_range=(54000, 55000), 
+        worker_ports=None, 
+        working_dir=None
+    )], 
+    lazy_errors=True, 
+    monitoring=None, 
+    retries=0, 
+    run_dir='runinfo', 
+    strategy='simple', 
+    usage_tracking=False
+)
+2019-07-08 20:41:12.987 parsl.dataflow.dflow:81 [INFO]  Parsl version: 0.8.0
+2019-07-08 20:41:12.987 parsl.dataflow.usage_tracking.usage:126 [DEBUG]  Tracking status: False
+2019-07-08 20:41:12.987 parsl.dataflow.usage_tracking.usage:127 [DEBUG]  Testing mode   : False
+2019-07-08 20:41:12.987 parsl.dataflow.dflow:107 [INFO]  Run id is: 17f415c2-26f1-44cc-acb9-e9a142f199b1
+2019-07-08 20:41:13.169 parsl.dataflow.memoization:52 [INFO]  App caching initialized
+2019-07-08 20:41:13.170 parsl.executors.high_throughput.executor:434 [DEBUG]  Starting queue management thread
+2019-07-08 20:41:13.170 parsl.executors.high_throughput.executor:309 [DEBUG]  [MTHREAD] queue management worker starting
+2019-07-08 20:41:13.171 parsl.executors.high_throughput.executor:438 [DEBUG]  Started queue management thread
+2019-07-08 20:41:13.187 parsl.executors.high_throughput.executor:268 [DEBUG]  Created management thread: <Thread(Thread-1, started daemon 123145494511616)>
+2019-07-08 20:41:13.188 parsl.executors.high_throughput.executor:242 [DEBUG]  Launch command: process_worker_pool.py   -p 0 -c 1.0 -m None --poll 10 --task_url=tcp://127.0.0.1:54205 --result_url=tcp://127.0.0.1:54428 --logdir=/Users/ben/Desktop/parsl-azure-provider/runinfo/005/HighThroughputExecutor --block_id={block_id} --hb_period=30 --hb_threshold=120 
+2019-07-08 20:41:13.188 parsl.executors.high_throughput.executor:245 [DEBUG]  Starting HighThroughputExecutor with provider:
+AzureProvider(
+    group_name='parsl.auto', 
+    init_blocks=1, 
+    key_file='azure_keys.json', 
+    key_name=None, 
+    launcher=SingleNodeLauncher(), 
+    linger=False, 
+    location='westus', 
+    max_blocks=10, 
+    min_blocks=0, 
+    nodes_per_block=1, 
+    parallelism=1, 
+    vm_reference={'publisher': 'Canonical', 'offer': 'UbuntuServer', 'sku': '16.04.0-LTS', 'version': 'latest', 'vm_size': 'Standard_DS1_v2', 'disk_size_gb': 10, 'admin_username': 'parsl.auto.admin', 'password': '@@86*worth*TRUST*problem*69@@'}, 
+    vnet_name='parsl.auto', 
+    walltime='01:00:00', 
+    worker_init=''
+)
+2019-07-08 20:41:13.667 parsl.providers.azure.azure:229 [INFO]  
+Creating NIC
+2019-07-08 20:41:13.667 parsl.providers.azure.azure:388 [INFO]  
+Creating (or updating) Vnet
+2019-07-08 20:41:14.199 parsl.providers.azure.azure:403 [INFO]  Found Existing Vnet. Proceeding.
+2019-07-08 20:41:14.200 parsl.providers.azure.azure:410 [INFO]  
+Creating (or updating) Subnet
+2019-07-08 20:41:14.936 parsl.providers.azure.azure:425 [INFO]  Found Existing Subnet. Proceeding.
+2019-07-08 20:41:14.936 parsl.providers.azure.azure:428 [INFO]  
+Creating (or updating) NIC
+2019-07-08 20:41:46.986 parsl.providers.azure.azure:240 [INFO]  
+Creating Linux Virtual Machine
+2019-07-08 20:42:29.194 parsl.providers.azure.azure:485 [INFO]  
+Create (empty) managed Data Disk
+2019-07-08 20:43:00.619 parsl.providers.azure.azure:256 [DEBUG]  Started instance_id: /subscriptions/2232146b-0836-4a1e-89eb-dc32054d9a03/resourceGroups/parsl.auto/providers/Microsoft.Compute/virtualMachines/parsl.auto.1562636506.986597
+2019-07-08 20:43:42.655 parsl.executors.high_throughput.executor:250 [ERROR]  Scaling out failed: Parameter 'body' can not be None.
