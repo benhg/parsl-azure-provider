@@ -1,0 +1,76 @@
+2019-07-08 21:31:36.361 parsl.dataflow.dflow:80 [DEBUG]  Starting DataFlowKernel with config
+Config(
+    app_cache=True, 
+    checkpoint_files=None, 
+    checkpoint_mode=None, 
+    checkpoint_period=None, 
+    data_management_max_threads=10, 
+    executors=[IPyParallelExecutor(
+        container_image=None, 
+        controller=Controller(
+            interfaces=None, 
+            ipython_dir='~/.ipython', 
+            log=True, 
+            mode='auto', 
+            port=None, 
+            port_range=None, 
+            profile='default', 
+            public_ip=None, 
+            reuse=False
+        ), 
+        engine_debug_level=None, 
+        engine_dir=None, 
+        label='ipp', 
+        managed=True, 
+        provider=AzureProvider(
+            group_name='parsl.auto', 
+            init_blocks=1, 
+            key_file='azure_keys.json', 
+            key_name=None, 
+            launcher=SingleNodeLauncher(), 
+            linger=False, 
+            location='westus', 
+            max_blocks=10, 
+            min_blocks=0, 
+            parallelism=1, 
+            vm_reference={'publisher': 'Canonical', 'offer': 'UbuntuServer', 'sku': '16.04.0-LTS', 'version': 'latest', 'vm_size': 'Standard_DS1_v2', 'disk_size_gb': 10, 'admin_username': 'parsl.auto.admin', 'password': '@@86*worth*TRUST*problem*69@@'}, 
+            vnet_name='parsl.auto', 
+            worker_init=''
+        ), 
+        storage_access=[], 
+        workers_per_node=1, 
+        working_dir=None
+    )], 
+    lazy_errors=True, 
+    monitoring=None, 
+    retries=0, 
+    run_dir='runinfo', 
+    strategy='simple', 
+    usage_tracking=False
+)
+2019-07-08 21:31:36.362 parsl.dataflow.dflow:81 [INFO]  Parsl version: 0.8.0
+2019-07-08 21:31:36.362 parsl.dataflow.usage_tracking.usage:126 [DEBUG]  Tracking status: False
+2019-07-08 21:31:36.362 parsl.dataflow.usage_tracking.usage:127 [DEBUG]  Testing mode   : False
+2019-07-08 21:31:36.362 parsl.dataflow.dflow:107 [INFO]  Run id is: 31394973-ca76-48ec-abc9-718d64d8a46a
+2019-07-08 21:31:36.544 parsl.dataflow.memoization:52 [INFO]  App caching initialized
+2019-07-08 21:31:36.544 parsl.executors.ipp_controller:99 [DEBUG]  Starting ipcontroller with 'ipcontroller --ipython-dir=/Users/ben/Desktop/parsl-azure-provider/runinfo/013 --ip=* --profile=ipp   '
+2019-07-08 21:31:37.752 parsl.executors.ipp:107 [DEBUG]  Waiting for /Users/ben/Desktop/parsl-azure-provider/runinfo/013/profile_ipp/security/ipcontroller-client.json
+2019-07-08 21:31:37.822 parsl.executors.ipp:123 [DEBUG]  Starting IPyParallelExecutor with provider:
+AzureProvider(
+    group_name='parsl.auto', 
+    init_blocks=1, 
+    key_file='azure_keys.json', 
+    key_name=None, 
+    launcher=SingleNodeLauncher(), 
+    linger=False, 
+    location='westus', 
+    max_blocks=10, 
+    min_blocks=0, 
+    parallelism=1, 
+    vm_reference={'publisher': 'Canonical', 'offer': 'UbuntuServer', 'sku': '16.04.0-LTS', 'version': 'latest', 'vm_size': 'Standard_DS1_v2', 'disk_size_gb': 10, 'admin_username': 'parsl.auto.admin', 'password': '@@86*worth*TRUST*problem*69@@'}, 
+    vnet_name='parsl.auto', 
+    worker_init=''
+)
+2019-07-08 21:31:38.930 parsl.providers.azure.azure:218 [INFO]  Creating NIC
+2019-07-08 21:31:38.930 parsl.providers.azure.azure:375 [INFO]  Creating (or updating) Vnet
+2019-07-08 21:31:39.275 parsl.executors.ipp:128 [ERROR]  Scaling out failed: argument of type 'CloudErrorData' is not iterable

@@ -1,0 +1,16 @@
+{
+  "ssh": "",
+  "interface": "tcp://*",
+  "registration": 57438,
+  "control": 57440,
+  "mux": 57442,
+  "hb_ping": 57443,
+  "hb_pong": 57444,
+  "task": 57446,
+  "iopub": 57448,
+  "key": "5b4abb80-1371fe15e94aa0c908675ed4",
+  "location": "benbox.local",
+  "pack": "json",
+  "unpack": "json",
+  "signature_scheme": "hmac-sha256"
+}
