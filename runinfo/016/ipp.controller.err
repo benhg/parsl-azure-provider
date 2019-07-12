@@ -1,0 +1,14 @@
+2019-07-08 21:37:40.840 [IPControllerApp] Created profile dir: '/Users/ben/Desktop/parsl-azure-provider/runinfo/016/profile_ipp'
+2019-07-08 21:37:40.850 [IPControllerApp] Hub listening on tcp://*:58004 for registration.
+2019-07-08 21:37:40.851 [IPControllerApp] Hub using DB backend: 'DictDB'
+2019-07-08 21:37:41.119 [IPControllerApp] hub::created hub
+2019-07-08 21:37:41.120 [IPControllerApp] writing connection info to /Users/ben/Desktop/parsl-azure-provider/runinfo/016/profile_ipp/security/ipcontroller-client.json
+2019-07-08 21:37:41.120 [IPControllerApp] writing connection info to /Users/ben/Desktop/parsl-azure-provider/runinfo/016/profile_ipp/security/ipcontroller-engine.json
+2019-07-08 21:37:41.121 [IPControllerApp] task::using Python leastload Task scheduler
+2019-07-08 21:37:41.121 [IPControllerApp] Heartmonitor started
+2019-07-08 21:37:41.129 [IPControllerApp] Creating pid file: /Users/ben/Desktop/parsl-azure-provider/runinfo/016/profile_ipp/pid/ipcontroller.pid
+2019-07-08 21:37:41.141 [scheduler] Scheduler started [leastload]
+2019-07-08 21:37:41.143 [IPControllerApp] client::client b'\x00\x80\x00A\xa7' requested 'connection_request'
+2019-07-08 21:37:41.143 [IPControllerApp] client::client [b'\x00\x80\x00A\xa7'] connected
+2019-07-08 21:37:41.439 [IPControllerApp] client::client b'\x00\x80\x00A\xa8' requested 'connection_request'
+2019-07-08 21:37:41.439 [IPControllerApp] client::client [b'\x00\x80\x00A\xa8'] connected
