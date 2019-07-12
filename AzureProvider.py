@@ -62,14 +62,30 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
           'version': VM OS version
           'vm_size': VM Size, analogous to instance type for AWS
           'disk_size_gb': (int) size of VM disk in gb
-          "admin_username": (str) admin username of VM instances,
-          "password": (str) admin password for VM instances
+          'admin_username': (str) admin username of VM instances,
+          'password': (str) admin password for VM instances
         }
+
+        VM Publisher, author, SKU, and Version can be found in the Azure marketplace.
+        One way to do so is to use the CLI, as described
+        [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage)
+
+        Another way is to look in the marketplace's GUI,
+        [here](https://azuremarketplace.microsoft.com/en-us/marketplace/apps?filters=virtual-machine-images%3Blinux&page=1).
+
     worker_init : str
         String to append to the Userdata script executed in the cloudinit phase of
         instance initialization.
     key_file : str
         Path to json file that contains 'Azure keys'
+        The structure of the key file is as follows:
+        {
+            "AZURE_CLIENT_ID": (str) azure client id [from account principal],
+            "AZURE_CLIENT_SECRET":(str) azure client secret [from account principal],
+            "AZURE_TENANT_ID": (str) azure tenant [account] id,
+            "AZURE_SUBSCRIPTION_ID": (str) azure subscription id
+
+        }
     init_blocks : int
         Number of blocks to provision at the start of the run. Default is 1.
     min_blocks : int
@@ -92,12 +108,12 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
     """
 
     def __init__(self,
+                 vm_reference,
                  init_blocks=1,
                  min_blocks=0,
                  max_blocks=10,
                  parallelism=1,
                  worker_init='',
-                 vm_reference=None,
                  location='westus',
                  group_name='parsl.auto',
                  key_name=None,
@@ -107,7 +123,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                  launcher=SingleNodeLauncher()):
         if not _api_enabled:
             raise OptionalModuleMissing(
-                ['azure'], "Azure Provider requires the azure module.")
+                ['azure', 'msrestazure'], "Azure Provider requires the azure module.")
 
         self._label = 'azure'
         self.init_blocks = init_blocks
@@ -119,7 +135,6 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         self.worker_init = worker_init
         self.vm_reference = vm_reference
-        self.vm_disk_size = self.vm_reference["disk_size_gb"]
         self.region = location
         self.vnet_name = vnet_name
 
@@ -134,7 +149,8 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         self.instances = []
 
         env_specified = os.getenv("AZURE_CLIENT_ID") is not None and os.getenv(
-            "AZURE_CLIENT_SECRET") is not None
+            "AZURE_CLIENT_SECRET") is not None and os.getenv(
+            "AZURE_TENANT_ID") is not None and os.getenv("AZURE_SUBSCRIPTION_ID") is not None
 
         if key_file is None and not env_specified:
             raise ConfigurationError("Must specify either, 'key_file', or\
@@ -230,7 +246,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                                                   self.vm_reference)
 
         # Uniqueness strategy from AWS provider
-        job_name = "parsl.auto.{0}".format(time.time())
+        job_name = "{0}-parsl-auto".format(str(time.time()).replace(".", ""))
 
         async_vm_creation = self.compute_client.\
             virtual_machines.create_or_update(
@@ -243,17 +259,13 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
 
         logger.debug("Started instance_id: {0}".format(vm_info.id))
 
-        # state = translate_table.get(instance.state['Name'], "PENDING")
-
         self.resources[vm_info.id] = {
             "job_id": vm_info.id,
             "instance": vm_info,
-            "status": "Test State"
+            "status": "PENDING"
         }
 
-        virtual_machine = async_vm_creation.result()
-
-        virtual_machine.storage_profile.data_disks.append({
+        vm_info.storage_profile.data_disks.append({
             'lun':
             12,
             'name':
@@ -266,7 +278,7 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
         })
         async_disk_attach = self.\
             compute_client.virtual_machines.create_or_update(
-                self.group_name, virtual_machine.name, virtual_machine)
+                self.group_name, vm_info.name, vm_info)
         async_disk_attach.wait()
 
         async_vm_start = self.compute_client.virtual_machines.start(
@@ -280,10 +292,10 @@ class AzureProvider(ExecutionProvider, RepresentationMixin):
                                 }
         self.compute_client.virtual_machines.run_command(
                                         self.group_name,
-                                        virtual_machine.name,
+                                        vm_info.name,
                                         run_command_parameters)
 
-        return virtual_machine.name
+        return vm_info.name
 
     def status(self, job_ids):
         """Get the status of a list of jobs identified by their ids.
